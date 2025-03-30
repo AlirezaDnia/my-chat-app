@@ -25,6 +25,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'API Key پیدا نشد' }, { status: 500 });
   }
 
+  const updatedMessages = messages.map((msg, index) => {
+    if (index === messages.length - 1 && typeof msg.content === 'string') {
+      return {
+        ...msg,
+        content: `${msg.content}`,
+      };
+    }
+    return msg;
+  });
+
   try {
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -36,7 +46,7 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         model: 'google/gemini-2.5-pro-exp-03-25:free',
-        messages,
+        messages: updatedMessages,
         stream: false,
       }),
     });

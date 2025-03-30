@@ -102,7 +102,7 @@ export default function Home() {
                 msg.role === 'user' ? 'bg-blue-100 text-right' : 'bg-green-100 text-left'
               }`}
             >
-              <span className="font-semibold">{msg.role === 'user' ? 'شما: ' : 'جمنای: '}</span>
+              <span className="font-semibold">{msg.role === 'user' ? 'شما: ' : 'هوش مصنوعی: '}</span>
               {typeof msg.content === 'string' ? (
                 <span>{msg.content}</span>
               ) : (
