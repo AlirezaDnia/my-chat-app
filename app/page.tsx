@@ -23,7 +23,14 @@ export default function Home() {
   const [message, setMessage] = useState<string>('');
   const [chat, setChat] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const [selectedModel, setSelectedModel] = useState<string>('google/gemini-2.5-pro-exp-03-25:free');
+
+  const modelNames: { [key: string]: string } = {
+    'google/gemini-2.5-pro-exp-03-25:free': 'Gemini 2.5 Pro',
+    'deepseek/deepseek-chat-v3-0324:free': 'DeepSeek Chat',
+  };
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -34,10 +41,12 @@ export default function Home() {
   const sendMessage = async () => {
     if (!message.trim()) return;
 
-    const newChat: Message[] = [...chat, { role: 'user', content: message }];
+    const newUserMessage: Message = { role: 'user', content: message };
+    const newChat: Message[] = [...chat, newUserMessage];
     setChat(newChat);
     setMessage('');
     setIsLoading(true);
+    setError(null);
 
     try {
       const response = await fetch('/api/chat', {
@@ -45,58 +54,19 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ messages: newChat }),
+        body: JSON.stringify({ messages: newChat, model: selectedModel }),
       });
 
       if (!response.ok) {
-        throw new Error('خطا در درخواست به سرور');
+        const errorData = await response.json();
+        throw new Error(errorData?.details?.message || 'خطا در درخواست به سرور');
       }
 
       const data: Message = await response.json();
       setChat([...newChat, data]);
-    } catch (error) {
-      console.error('خطا:', error);
-      setChat([...newChat, { role: 'assistant', content: 'یه مشکلی پیش اومد!' }]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const sendImageMessage = async () => {
-    const imageMessage: Message = {
-      role: 'user',
-      content: [
-        { type: 'text', text: 'What is in this image?' },
-        {
-          type: 'image_url',
-          image_url: {
-            url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg',
-          },
-        },
-      ],
-    };
-
-    const newChat: Message[] = [...chat, imageMessage];
-    setChat(newChat);
-    setIsLoading(true);
-
-    try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ messages: newChat }),
-      });
-
-      if (!response.ok) {
-        throw new Error('خطا در درخواست به سرور');
-      }
-
-      const data: Message = await response.json();
-      setChat([...newChat, data]);
-    } catch (error) {
-      console.error('خطا:', error);
+    } catch (err: any) {
+      console.error('خطا:', err);
+      setError(err.message || 'یه مشکلی پیش اومد!');
       setChat([...newChat, { role: 'assistant', content: 'یه مشکلی پیش اومد!' }]);
     } finally {
       setIsLoading(false);
@@ -106,18 +76,22 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="w-full max-w-2xl bg-white rounded-lg shadow-lg p-6">
-        <h1 className="text-2xl font-bold text-center mb-4">چت با Gemini 2.5 Pro</h1>
+        <h1 className="text-2xl font-bold text-center mb-4">چت با مدل زبانی</h1>
+        <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)}>
+          <option value="google/gemini-2.5-pro-exp-03-25:free">Gemini 2.5 Pro</option>
+          <option value="deepseek/deepseek-chat-v3-0324:free">DeepSeek Chat</option>
+        </select>
         <div ref={chatContainerRef} className="h-96 overflow-y-auto border rounded p-4 bg-gray-50">
           {chat.map((msg, index) => (
             <div
-            
               key={index}
-              className={`mb-4 p-2 rounded  ${msg.role === 'user' ? 'bg-blue-100 text-right' : 'bg-green-100 text-left'
-                }`}
+              className={`mb-4 p-2 rounded ${
+                msg.role === 'user' ? 'bg-blue-100 text-right' : 'bg-green-100 text-left'
+              }`}
             >
-              <span className="font-semibold">{msg.role === 'user' ? 'شما: ' : 'هوش مصنوعی: '}</span>
+              <span className="font-semibold">{msg.role === 'user' ? 'شما: ' : `${modelNames[selectedModel]}: `}</span>
               {typeof msg.content === 'string' ? (
-                <ReactMarkdown children={msg.content} /> // نمایش متن Markdown با ReactMarkdown
+                <ReactMarkdown children={msg.content}  />
               ) : (
                 msg.content.map((item, i) =>
                   item.type === 'text' ? (
@@ -130,6 +104,7 @@ export default function Home() {
             </div>
           ))}
           {isLoading && <p>در حال بارگذاری...</p>}
+          {error && <p className="text-red-500">{error}</p>}
         </div>
         <div className="mt-4 flex gap-2">
           <input
