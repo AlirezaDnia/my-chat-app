@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 
 interface TextContent {
   type: 'text';
@@ -109,14 +110,14 @@ export default function Home() {
         <div ref={chatContainerRef} className="h-96 overflow-y-auto border rounded p-4 bg-gray-50">
           {chat.map((msg, index) => (
             <div
+            
               key={index}
-              className={`mb-4 p-2 rounded ${
-                msg.role === 'user' ? 'bg-blue-100 text-right' : 'bg-green-100 text-left'
-              }`}
+              className={`mb-4 p-2 rounded  ${msg.role === 'user' ? 'bg-blue-100 text-right' : 'bg-green-100 text-left'
+                }`}
             >
               <span className="font-semibold">{msg.role === 'user' ? 'شما: ' : 'هوش مصنوعی: '}</span>
               {typeof msg.content === 'string' ? (
-                <span>{msg.content}</span>
+                <ReactMarkdown children={msg.content} /> // نمایش متن Markdown با ReactMarkdown
               ) : (
                 msg.content.map((item, i) =>
                   item.type === 'text' ? (

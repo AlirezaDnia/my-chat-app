@@ -31,7 +31,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (index === messages.length - 1 && typeof msg.content === 'string') {
       return {
         ...msg,
-        content: `${msg.content}`,
+        content: msg.content,
       };
     }
     return msg;
