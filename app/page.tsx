@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 interface TextContent {
   type: 'text';
@@ -21,14 +21,22 @@ interface Message {
 export default function Home() {
   const [message, setMessage] = useState<string>('');
   const [chat, setChat] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [chat]);
 
   const sendMessage = async () => {
     if (!message.trim()) return;
 
-    // پیام ساده متنی
     const newChat: Message[] = [...chat, { role: 'user', content: message }];
     setChat(newChat);
     setMessage('');
+    setIsLoading(true);
 
     try {
       const response = await fetch('/api/chat', {
@@ -48,11 +56,12 @@ export default function Home() {
     } catch (error) {
       console.error('خطا:', error);
       setChat([...newChat, { role: 'assistant', content: 'یه مشکلی پیش اومد!' }]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const sendImageMessage = async () => {
-    // پیام با تصویر (برای تست)
     const imageMessage: Message = {
       role: 'user',
       content: [
@@ -68,6 +77,7 @@ export default function Home() {
 
     const newChat: Message[] = [...chat, imageMessage];
     setChat(newChat);
+    setIsLoading(true);
 
     try {
       const response = await fetch('/api/chat', {
@@ -87,6 +97,8 @@ export default function Home() {
     } catch (error) {
       console.error('خطا:', error);
       setChat([...newChat, { role: 'assistant', content: 'یه مشکلی پیش اومد!' }]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -94,7 +106,7 @@ export default function Home() {
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="w-full max-w-2xl bg-white rounded-lg shadow-lg p-6">
         <h1 className="text-2xl font-bold text-center mb-4">چت با Gemini 2.5 Pro</h1>
-        <div className="h-96 overflow-y-auto border rounded p-4 bg-gray-50">
+        <div ref={chatContainerRef} className="h-96 overflow-y-auto border rounded p-4 bg-gray-50">
           {chat.map((msg, index) => (
             <div
               key={index}
@@ -116,6 +128,7 @@ export default function Home() {
               )}
             </div>
           ))}
+          {isLoading && <p>در حال بارگذاری...</p>}
         </div>
         <div className="mt-4 flex gap-2">
           <input
@@ -132,12 +145,6 @@ export default function Home() {
           >
             ارسال متن
           </button>
-          {/* <button
-            onClick={sendImageMessage}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
-          >
-            ارسال تصویر تست
-          </button> */}
         </div>
       </div>
     </div>
